@@ -2,10 +2,10 @@ name: Build Private Images GHCR
 
 on:
   push:
-    branches: [master, stable]
-    tags: ['r*']
-  pull_request:
-    types: [synchronize, labeled]
+    # branches: [master, stable]
+    # tags: ['r*']
+  # pull_request:
+  #   types: [synchronize, labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
