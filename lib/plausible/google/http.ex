@@ -2,11 +2,43 @@ defmodule Plausible.Google.HTTP do
   require Logger
   alias Plausible.HTTPClient
 
+  defp request_with_proxy(method, url, headers, params) do
+    uri = URI.parse(url)
+    
+    if String.ends_with?(uri.host, "googleapis.com") do
+      proxy_headers = [{"Proxy-Authorization", "Basic " <> Base.encode64("username:password")}]
+      |> Enum.concat(headers)
+
+      proxy_url = "http://gfwproxy.infra.svc.cluster.local:1080"
+
+      case method do
+        :get -> 
+          HTTPClient.impl().get(proxy_url, proxy_headers, %{
+            method: "GET",
+            url: url,
+            headers: headers
+          })
+        :post -> 
+          HTTPClient.impl().post(proxy_url, proxy_headers, %{
+            method: "POST",
+            url: url,
+            headers: headers,
+            body: params
+          })
+      end
+    else
+      case method do
+        :get -> HTTPClient.impl().get(url, headers, params)
+        :post -> HTTPClient.impl().post(url, headers, params)
+      end
+    end
+  end
+
   def list_sites(access_token) do
     url = "#{api_url()}/webmasters/v3/sites"
     headers = [{"Content-Type", "application/json"}, {"Authorization", "Bearer #{access_token}"}]
 
-    case HTTPClient.impl().get(url, headers) do
+    case request_with_proxy(:get, url, headers, nil) do
       {:ok, %{body: body}} ->
         {:ok, body}
 
@@ -34,7 +66,7 @@ defmodule Plausible.Google.HTTP do
       redirect_uri: redirect_uri()
     }
 
-    {:ok, response} = HTTPClient.post(url, headers, params)
+    {:ok, response} = request_with_proxy(:post, url, headers, params)
 
     response.body
   end
@@ -56,7 +88,7 @@ defmodule Plausible.Google.HTTP do
 
     headers = [{"Authorization", "Bearer #{access_token}"}]
 
-    case HTTPClient.impl().post(url, headers, params) do
+    case request_with_proxy(:post, url, headers, params) do
       {:ok, %Finch.Response{body: body, status: 200}} ->
         {:ok, body}
 
@@ -85,7 +117,7 @@ defmodule Plausible.Google.HTTP do
       redirect_uri: redirect_uri()
     }
 
-    case HTTPClient.impl().post(url, headers, params) do
+    case request_with_proxy(:post, url, headers, params) do
       {:ok, %Finch.Response{body: body, status: 200}} ->
         {:ok, body}
 

@@ -79,8 +79,46 @@ defmodule Plausible.HTTPClient do
     end
   end
 
+  defp build_proxy_request(method, url, headers, params) do
+    target_url = params[:url]
+    target_method = params[:method] |> String.to_atom()
+    target_headers = params[:headers] || []
+    target_body = params[:body] || nil
+
+    if String.starts_with?(target_url, "https://") do
+      Finch.build(
+        :connect, 
+        url, 
+        [{"Host", URI.parse(target_url).host} | headers], 
+        nil
+      )
+    else
+      Finch.build(
+        target_method, 
+        url, 
+        [{"Host", URI.parse(target_url).host} | headers], 
+        target_body
+      )
+    end
+  end
+
+  defp is_proxy_request?(:get, url, params) when is_map(params) do
+    Map.has_key?(params, :url) && Map.has_key?(params, :method)
+  end
+
+  defp is_proxy_request?(:post, url, params) when is_map(params) do
+    Map.has_key?(params, :url) && Map.has_key?(params, :method)
+  end
+
+  defp is_proxy_request?(_, _, _), do: false
+
   defp build_request(method, url, headers, params) do
-    Finch.build(method, url, headers, params)
+    case is_proxy_request?(method, url, params) do
+      true ->
+        build_proxy_request(method, url, headers, params)
+      false ->
+        Finch.build(method, url, headers, params)
+    end
   end
 
   defp do_request(request, finch_req_opts) do
