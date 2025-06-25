@@ -302,7 +302,7 @@ defmodule Plausible.Application do
             ]
           ])
 
-          Map.put(pool_config, uri.host, proxy_config)
+          Map.put(pool_config, api_url, proxy_config)
         else
           pool_config
         end
