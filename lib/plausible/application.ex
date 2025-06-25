@@ -271,10 +271,13 @@ defmodule Plausible.Application do
     case Keyword.get(google_conf, :api_url) do
       nil -> pool_config
       api_url when is_binary(api_url) ->
-        if String.contains?(api_url, "www.googleapis.com") do
+        uri = URI.parse(api_url)
+        # if String.contains?(api_url, "www.googleapis.com") do
+        if uri.host == "www.googleapis.com" do
           proxy_config = Config.Reader.merge(default, [
             conn_opts: [
               proxy: {:http, 'gfwproxy.infra.svc.cluster.local', 1080, []},
+              hostname: 'www.googleapis.com',
               transport_opts: [timeout: 15_000]
             ]
           ])
