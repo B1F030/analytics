@@ -276,10 +276,29 @@ defmodule Plausible.Application do
         if uri.host =~ "googleapis.com" do
           proxy_config = Config.Reader.merge(default, [
             conn_opts: [
-              proxy: {:http, 'gfwproxy.infra.svc.cluster.local', 1080, []},
+              # proxy: {:http, 'gfwproxy.infra.svc.cluster.local', 1080, []},
+              # hostname: String.to_charlist(uri.host),
+              # port: uri.port || 443,
+              # transport_opts: [timeout: 15_000]
+              scheme: :https,
               hostname: String.to_charlist(uri.host),
               port: uri.port || 443,
-              transport_opts: [timeout: 15_000]
+              transport: :ssl,
+              protocols: [:http1],
+              proxy: {
+                :http, 
+                'gfwproxy.infra.svc.cluster.local', 
+                1080,
+                transport: :tcp,
+                transport_opts: []
+              },
+              transport_opts: [
+                timeout: 15_000,
+                proxy_connect_opts: [
+                  timeout: 10_000,
+                  ssl_options: []
+                ]
+              ]
             ]
           ])
 
