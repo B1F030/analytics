@@ -273,16 +273,17 @@ defmodule Plausible.Application do
       api_url when is_binary(api_url) ->
         uri = URI.parse(api_url)
         # if String.contains?(api_url, "www.googleapis.com") do
-        if uri.host == "www.googleapis.com" do
+        if uri.host =~ "googleapis.com" do
           proxy_config = Config.Reader.merge(default, [
             conn_opts: [
               proxy: {:http, 'gfwproxy.infra.svc.cluster.local', 1080, []},
-              hostname: 'www.googleapis.com',
+              hostname: String.to_charlist(uri.host),
+              port: uri.port || 443,
               transport_opts: [timeout: 15_000]
             ]
           ])
 
-          Map.put(pool_config, api_url, proxy_config)
+          Map.put(pool_config, uri.host, proxy_config)
         else
           pool_config
         end
