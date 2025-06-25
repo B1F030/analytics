@@ -2,10 +2,10 @@ name: Build Private Images GHCR
 
 on:
   push:
-    branches: [master, stable]
-    tags: ['r*']
-  pull_request:
-    types: [synchronize, labeled]
+    # branches: [master, stable]
+    # tags: ['r*']
+  # pull_request:
+  #   types: [synchronize, labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,7 +27,7 @@ jobs:
         env:
           DOCKER_METADATA_PR_HEAD_SHA: true
         with:
-          images: ghcr.io/plausible/analytics/ee
+          images: registry.cn-hangzhou.aliyuncs.com/b1f/analytics
           tags: |
             type=ref,event=pr
             type=ref,event=branch
@@ -37,12 +37,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to GitHub Container Registry
+      - name: Login to Aliyun
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: registry.cn-hangzhou.aliyuncs.com
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push
         id: docker_build
@@ -54,49 +54,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            MIX_ENV=prod
+            MIX_ENV=ce
             BUILD_METADATA=${{ steps.meta.outputs.json }}
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
-
-      - name: Notify team on failure
-        if: ${{ failure() && github.ref == 'refs/heads/master' }}
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: ${{ secrets.BUILD_NOTIFICATION_URL }}
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
-          data: '{"content": "<a href=\"https://github.com/plausible/analytics/actions/workflows/build-private-images.yml\">Build failed</a>"}'
-
-      - name: Get first line and Co-Authored-By lines of the commit message
-        if: ${{ success() && github.ref == 'refs/heads/master' }}
-        id: commitmsg
-        run: |
-          first_line=$(echo "${{ github.event.head_commit.message }}" | head -n1)
-          co_authors=$(echo "${{ github.event.head_commit.message }}" | grep -h 'Co-authored-by:' | sort -u | cut -d: -f2- | paste -sd, -)
-          {
-            echo "first_line=$first_line"
-            echo "co_authors=$co_authors"
-          } >> $GITHUB_OUTPUT
-
-      - name: Notify team on success
-        if: ${{ success() && github.ref == 'refs/heads/master' }}
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: ${{ secrets.BUILD_NOTIFICATION_URL }}
-          method: 'POST'
-          customHeaders: '{"Content-Type": "application/json"}'
-          escapeData: 'true'
-          data: |
-            {
-              "content": "<h1>🚀 Deploying ${{ steps.commitmsg.outputs.first_line }}</h1><p>Author(s): ${{ github.event.head_commit.author.name }}<br/>${{ steps.commitmsg.outputs.co_authors}}</p><p>Commit: <a href=\"${{ github.event.head_commit.url }}\">${{ github.sha }}</a></p>"
-            }
-
-      - name: Set Honeycomb marker on success
-        if: ${{ success() && github.ref == 'refs/heads/master' }}
-        uses: cnkk/honeymarker-action@1bd92aec746e38efe43a0faee94ced1ebb930712
-        with:
-          apikey: ${{ secrets.HONEYCOMB_MARKER_APIKEY }}
-          dataset: 'plausible-prod'
-          message: "${{ github.sha }}"
