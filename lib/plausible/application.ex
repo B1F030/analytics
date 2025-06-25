@@ -273,35 +273,35 @@ defmodule Plausible.Application do
       api_url when is_binary(api_url) ->
         uri = URI.parse(api_url)
         # if String.contains?(api_url, "www.googleapis.com") do
-        if uri.host =~ "googleapis.com" do
+        if uri.host == "www.googleapis.com" do
           proxy_config = Config.Reader.merge(default, [
             conn_opts: [
-              # proxy: {:http, 'gfwproxy.infra.svc.cluster.local', 1080, []},
-              # hostname: String.to_charlist(uri.host),
-              # port: uri.port || 443,
-              # transport_opts: [timeout: 15_000]
-              scheme: :https,
-              hostname: String.to_charlist(uri.host),
+              proxy: {:http, 'gfwproxy.infra.svc.cluster.local', 1080, []},
+              hostname: uri.host,
               port: uri.port || 443,
-              transport: :ssl,
-              protocols: [:http1],
-              proxy: {
-                :http, 
-                String.to_charlist("gfwproxy.infra.svc.cluster.local"), 
-                1080,
-                transport: :tcp,
-                transport_opts: []
-              },
-              transport_opts: [
-                timeout: 15_000,
-                server_name_indication: String.to_charlist(uri.host),
-                proxy_connect_opts: [
-                  timeout: 10_000,
-                  ssl_options: [
-                    server_name_indication: String.to_charlist(uri.host)
-                  ]
-                ]
-              ]
+              transport_opts: [timeout: 15_000]
+              # scheme: :https,
+              # hostname: uri.host,
+              # port: 443,
+              # transport: :ssl,
+              # protocols: [:http1],
+              # proxy: {
+              #   :http, 
+              #   String.to_charlist("gfwproxy.infra.svc.cluster.local"), 
+              #   1080,
+              #   transport: :tcp,
+              #   transport_opts: []
+              # }
+              # transport_opts: [
+              #   timeout: 15_000,
+              #   server_name_indication: String.to_charlist(uri.host),
+              #   proxy_connect_opts: [
+              #     timeout: 10_000,
+              #     ssl_options: [
+              #       server_name_indication: String.to_charlist(uri.host)
+              #     ]
+              #   ]
+              # ]
             ]
           ])
 
