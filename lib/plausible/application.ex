@@ -276,7 +276,7 @@ defmodule Plausible.Application do
           proxy_config = Config.Reader.merge(default, [
             conn_opts: [
               proxy: {:http, 'gfwproxy.infra.svc.cluster.local', 1080, []},
-              hostname: uri,
+              hostname: api_url,
               port: uri.port || 443,
               transport_opts: [timeout: 15_000]
             ]
