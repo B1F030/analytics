@@ -197,6 +197,15 @@ defmodule Plausible.Application do
       "https://icons.duckduckgo.com",
       Config.Reader.merge(default_opts, conn_opts: [transport_opts: [timeout: 15_000]])
     )
+    |> Map.put(
+      "https://www.googleapis.com",
+      Config.Reader.merge(default_opts, conn_opts: [
+        proxy: {:http, "gfwproxy.infra.svc.cluster.local", 1080, []},
+        hostname: "www.googleapis.com",
+        port: 443,
+        transport_opts: [timeout: 15_000]
+      ])
+    )
     |> maybe_add_sentry_pool(default_opts)
     |> maybe_add_paddle_pool(default_opts)
     |> maybe_add_google_pools(default_opts)
