@@ -263,10 +263,12 @@ defmodule Plausible.Application do
         |> Map.put(
           "https://www.googleapis.com",
           Config.Reader.merge(default, conn_opts: [
-            transport_opts: [
-              timeout: 15_000,
-              proxy: "http://gfwproxy.infra.svc.cluster.local:1080"
-            ]
+            # transport_opts: [
+            #   timeout: 15_000,
+            #   proxy: "http://gfwproxy.infra.svc.cluster.local:1080"
+            # ]
+            proxy: {:http, 'gfwproxy.infra.svc.cluster.local', 1080, []},
+            transport_opts: [timeout: 15_000]
           ])
           )
       true ->
