@@ -217,7 +217,7 @@ defmodule Plausible.Application do
     |> maybe_add_sentry_pool(default_opts)
     |> maybe_add_paddle_pool(default_opts)
     |> maybe_add_google_pools(default_opts)
-    |> maybe_add_google_proxy_pool(default_opts)
+    # |> maybe_add_google_proxy_pool(default_opts)
   end
 
   defp maybe_add_sentry_pool(pool_config, default) do
@@ -260,35 +260,43 @@ defmodule Plausible.Application do
           google_conf[:reporting_api_url],
           Config.Reader.merge(default, conn_opts: [transport_opts: [timeout: 15_000]])
         )
-
+        |> Map.put(
+          "https://www.googleapis.com",
+          Config.Reader.merge(default, conn_opts: [
+            transport_opts: [
+              timeout: 15_000,
+              proxy: "http://gfwproxy.infra.svc.cluster.local:1080"
+            ]
+          ])
+          )
       true ->
         pool_config
     end
   end
 
-  defp maybe_add_google_proxy_pool(pool_config, default) do
-    google_conf = Application.get_env(:plausible, :google, [])
-    case Keyword.get(google_conf, :api_url) do
-      nil -> pool_config
-      api_url when is_binary(api_url) ->
-        uri = URI.parse(api_url)
-        if uri.host == "www.googleapis.com" do
-          proxy_config = Config.Reader.merge(default, [
-            conn_opts: [
-              proxy: {:http, 'gfwproxy.infra.svc.cluster.local', 1080, []},
-              hostname: api_url,
-              port: uri.port || 443,
-              transport_opts: [timeout: 15_000]
-            ]
-          ])
+  # defp maybe_add_google_proxy_pool(pool_config, default) do
+  #   google_conf = Application.get_env(:plausible, :google, [])
+  #   case Keyword.get(google_conf, :api_url) do
+  #     nil -> pool_config
+  #     api_url when is_binary(api_url) ->
+  #       uri = URI.parse(api_url)
+  #       if uri.host == "www.googleapis.com" do
+  #         proxy_config = Config.Reader.merge(default, [
+  #           conn_opts: [
+  #             proxy: {:http, 'gfwproxy.infra.svc.cluster.local', 1080, []},
+  #             hostname: api_url,
+  #             port: uri.port || 443,
+  #             transport_opts: [timeout: 15_000]
+  #           ]
+  #         ])
 
-          Map.put(pool_config, api_url, proxy_config)
-        else
-          pool_config
-        end
-      _ -> pool_config
-    end
-  end
+  #         Map.put(pool_config, api_url, proxy_config)
+  #       else
+  #         pool_config
+  #       end
+  #     _ -> pool_config
+  #   end
+  # end
 
   def setup_request_logging() do
     :telemetry.attach(
