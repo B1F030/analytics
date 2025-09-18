@@ -73,6 +73,10 @@ defmodule PlausibleWeb.Live.PropsSettings.Form do
 
                 fn
                   "", [] ->
+                    # 延迟加载：初始时返回空列表
+                    send(pid, {:update_prop_key_options_count, 0})
+                    []
+                    
                     options =
                       @site
                       |> Plausible.Props.suggest_keys_to_allow()
