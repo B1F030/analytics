@@ -31,6 +31,7 @@ defmodule PlausibleWeb.Live.PropsSettings do
        site_id: site_id,
        domain: domain,
        add_prop?: false,
+       add_prop_loading: false,
        filter_text: ""
      )}
   end
@@ -58,6 +59,7 @@ defmodule PlausibleWeb.Live.PropsSettings do
         props={@displayed_props}
         domain={@domain}
         filter_text={@filter_text}
+        add_prop_loading={@add_prop_loading}
       />
     </section>
     """
@@ -83,7 +85,7 @@ defmodule PlausibleWeb.Live.PropsSettings do
   end
 
   def handle_event("add-prop", _value, socket) do
-    {:noreply, assign(socket, add_prop?: true)}
+    {:noreply, assign(socket, add_prop?: true, add_prop_loading: true)}
   end
 
   def handle_event("filter", %{"filter-text" => filter_text}, socket) do
@@ -125,7 +127,7 @@ defmodule PlausibleWeb.Live.PropsSettings do
   end
 
   def handle_info(:cancel_add_prop, socket) do
-    {:noreply, assign(socket, add_prop?: false)}
+    {:noreply, assign(socket, add_prop?: false, add_prop_loading: false)}
   end
 
   def handle_info({:props_allowed, props}, socket) when is_list(props) do
@@ -162,6 +164,11 @@ defmodule PlausibleWeb.Live.PropsSettings do
       |> put_live_flash(:success, "Property added successfully")
 
     {:noreply, socket}
+  end
+
+  # Received from the child form LiveView when it's finished mounting
+  def handle_info(:props_form_ready, socket) do
+    {:noreply, assign(socket, add_prop_loading: false)}
   end
 
   defp new_form(site) do

@@ -29,12 +29,16 @@ defmodule PlausibleWeb.Live.PropsSettings.Form do
         new_form(site)
       end)
 
-    {:ok,
-     assign(socket,
-       domain: domain,
-       rendered_by: pid,
-       prop_key_options_count: 0
-     )}
+    socket =
+      assign(socket,
+        domain: domain,
+        rendered_by: pid,
+        prop_key_options_count: 0
+      )
+
+    send(pid, :props_form_ready)
+
+    {:ok, socket}
   end
 
   def render(assigns) do
@@ -76,7 +80,7 @@ defmodule PlausibleWeb.Live.PropsSettings.Form do
                     # 延迟加载：初始时返回空列表
                     send(pid, {:update_prop_key_options_count, 0})
                     []
-                    
+
                     options =
                       @site
                       |> Plausible.Props.suggest_keys_to_allow()
